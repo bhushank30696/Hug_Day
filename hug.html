@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Gallery of Us 🏛️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400&family=La+Belle+Aurore&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --accent: #d4a5a5; /* Dusty Rose */
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #fdfbfb;
+            height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            perspective: 1200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            user-select: none;
+        }
+
+        /* --- BACKGROUND MESH --- */
+        .ambient-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, hsla(253,16%,7%,0) 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0) 0, hsla(225,39%,30%,0) 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0) 0, hsla(339,49%,30%,0) 50%);
+            z-index: -2;
+        }
+        
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out;
+        }
+        .b1 { top: -10%; left: -10%; width: 600px; height: 600px; background: #ffe0e6; }
+        .b2 { bottom: -10%; right: -10%; width: 500px; height: 500px; background: #e0f7fa; animation-delay: -5s; }
+        .b3 { top: 40%; left: 40%; width: 400px; height: 400px; background: #fff1e6; animation-delay: -10s; }
+
+        /* --- FILM GRAIN OVERLAY --- */
+        .grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1000;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- MAGAZINE HEADER --- */
+        .header {
+            position: absolute;
+            top: 50px;
+            text-align: center;
+            z-index: 50;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            transition: opacity 0.5s;
+        }
+        
+        .header-main {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: #2d3436;
+            letter-spacing: -1px;
+            font-weight: 500;
+        }
+        .header-main span { font-style: italic; color: var(--accent); }
+
+        .header-sub {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #a4b0be;
+            margin-top: 5px;
+        }
+
+        /* --- THE 3D CAROUSEL --- */
+        #stage {
+            width: 100%; height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #carousel {
+            position: absolute;
+            width: 220px; height: 320px;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.1, 0, 0.3, 1);
+        }
+
+        /* Polaroid Style Card */
+        .card {
+            position: absolute;
+            width: 200px; height: 280px;
+            left: 10px; top: 20px;
+            background: #fff;
+            padding: 10px 10px 45px 10px; 
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.08), 
+                0 2px 5px rgba(0,0,0,0.05);
+            transform-origin: center;
+            transition: all 1s cubic-bezier(0.25, 0.8, 0.25, 1);
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: sepia(10%) contrast(105%);
+        }
+
+        .card-caption {
+            position: absolute;
+            bottom: 10px; width: 100%; text-align: center;
+            font-family: 'La Belle Aurore', cursive;
+            color: #555; font-size: 1.1rem;
+            left: 0;
+            transform: rotate(-2deg);
+        }
+
+        /* --- THE EMBRACE ANIMATION --- */
+        #carousel.embrace .card {
+            transform: rotateY(0deg) translateZ(0px) rotateZ(var(--rand-rot)) !important;
+            opacity: 0; 
+            box-shadow: 0 0 0 transparent;
+        }
+
+        /* --- UI LAYER --- */
+        .ui-layer {
+            position: absolute; bottom: 50px;
+            z-index: 100;
+            display: flex; flex-direction: column; align-items: center;
+            pointer-events: none;
+        }
+
+        .instruction {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 25px;
+            opacity: 0.7;
+        }
+
+        .hug-btn {
+            background: #2d3436;
+            color: white;
+            border: none;
+            padding: 15px 45px;
+            border-radius: 50px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.3s, background 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .hug-btn:hover { transform: translateY(-3px); background: #000; }
+        .hug-btn:active { transform: scale(0.95); }
+
+        /* --- FINAL REVEAL --- */
+        .reveal {
+            position: absolute; z-index: 200;
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease 0.5s;
+        }
+        .reveal.show { opacity: 1; pointer-events: auto; }
+
+        .big-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 600;
+            color: #2d3436;
+            line-height: 1.1;
+            text-align: center;
+            mix-blend-mode: multiply;
+        }
+        .big-text span { font-style: italic; color: #d4a5a5; }
+
+        .sub-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 20px;
+            color: #888;
+            max-width: 80%;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .final-img-container {
+            width: 250px; height: 350px;
+            background: white;
+            padding: 10px 10px 50px 10px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            transform: rotate(-3deg) translateY(20px);
+            margin-bottom: 30px;
+            opacity: 0;
+            transition: all 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .reveal.show .final-img-container { transform: rotate(-3deg) translateY(0); opacity: 1; }
+        
+        .final-img-container img { width: 100%; height: 100%; object-fit: cover; filter: sepia(20%); }
+
+    </style>
+</head>
+<body>
+
+    <div class="grain"></div>
+    
+    <div class="ambient-bg">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+        <div class="blob b3"></div>
+    </div>
+
+    <div class="header" id="header">
+        <div class="header-main">The Art <span>of</span> Us</div>
+        <div class="header-sub">Feb 12, 2026</div>
+    </div>
+
+    <div id="stage">
+        <div id="carousel">
+            </div>
+    </div>
+
+    <div class="ui-layer" id="ui">
+        <div class="instruction">Swipe to explore...</div>
+        <button class="hug-btn" onclick="triggerHug()">Send Hug</button>
+    </div>
+
+    <div class="reveal" id="reveal">
+        <div class="final-img-container">
+            <img src="forever_my_home.png" alt="Us">
+            <div style="position:absolute; bottom:15px; width:100%; text-align:center; font-family:'La Belle Aurore'; color:#555; left:0; font-size: 1.2rem;">Forever my home</div>
+        </div>
+        <div class="big-text">Consider<br>yourself <span>hugged.</span></div>
+        <div class="sub-text">I wish I was there to hold you tight,<br>but this will have to do for now.</div>
+    </div>
+
+    <script>
+        // DATA: Captions mapped to Images
+        // Image filenames correspond to the caption text (snake_case)
+        const cardData = [
+            { text: "My happy place", img: "my_happy_place.png" },
+            { text: "Safe haven", img: "safe_haven.png" },
+            { text: "Best feeling ever", img: "best_feeling_ever.png" },
+            { text: "Home is you", img: "home_is_you.png" },
+            { text: "Quiet moments", img: "quiet_moments.png" },
+            { text: "My peace", img: "my_peace.png" },
+            { text: "Us against the world", img: "us_against_the_world.png" },
+            { text: "Pure warmth", img: "pure_warmth.png" }
+        ];
+
+        const radius = 280; 
+        const carousel = document.getElementById('carousel');
+        
+        function init() {
+            for(let i=0; i < cardData.length; i++) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                // Random Rotation
+                const randRot = (Math.random() * 6 - 3) + 'deg';
+                card.style.setProperty('--rand-rot', randRot);
+                
+                // Arrange in Circle
+                const angle = (i / cardData.length) * 360;
+                card.style.transform = `rotateY(${angle}deg) translateZ(${radius}px) rotateZ(${randRot})`;
+                
+                // Image
+                const img = document.createElement('img');
+                img.src = cardData[i].img; 
+                card.appendChild(img);
+                
+                // Caption
+                const cap = document.createElement('div');
+                cap.className = 'card-caption';
+                cap.innerText = cardData[i].text; 
+                card.appendChild(cap);
+                
+                carousel.appendChild(card);
+            }
+        }
+
+        // --- DRAG LOGIC ---
+        let startX = 0;
+        let currentRotation = 0;
+        let isDragging = false;
+
+        document.addEventListener('mousedown', startDrag);
+        document.addEventListener('touchstart', (e) => startDrag(e.touches[0]), {passive: false});
+
+        function startDrag(e) {
+            startX = e.clientX;
+            isDragging = true;
+            carousel.style.transition = 'none';
+        }
+
+        document.addEventListener('mousemove', moveDrag);
+        document.addEventListener('touchmove', (e) => moveDrag(e.touches[0]), {passive: false});
+
+        function moveDrag(e) {
+            if(!isDragging) return;
+            const delta = e.clientX - startX;
+            carousel.style.transform = `rotateY(${currentRotation + delta * 0.5}deg)`;
+        }
+
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        function endDrag(e) {
+            if(!isDragging) return;
+            isDragging = false;
+            carousel.style.transition = 'transform 0.8s cubic-bezier(0.1, 0, 0.3, 1)'; 
+        }
+
+        // --- HUG TRIGGER ---
+        function triggerHug() {
+            carousel.classList.add('embrace');
+            document.getElementById('ui').style.opacity = '0';
+            document.getElementById('header').style.opacity = '0'; 
+            document.getElementById('reveal').classList.add('show');
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
